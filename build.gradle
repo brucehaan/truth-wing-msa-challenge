@@ -35,6 +35,9 @@ dependencies {
     testCompileOnly("org.projectlombok:lombok:1.18.48")
     testAnnotationProcessor("org.projectlombok:lombok:1.18.48")
 
+    // batch (정산 배치)
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+
     //swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1'
 }
