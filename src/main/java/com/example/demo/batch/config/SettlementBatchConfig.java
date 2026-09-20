@@ -1,9 +1,9 @@
 package com.example.demo.batch.config;
 
-import com.example.demo.batch.dto.SettlementLine;
-import com.example.demo.batch.job.SettlementTasklet;
+import com.example.demo.batch.config.dto.SettlementLine;
+import com.example.demo.batch.application.job.SettlementTasklet;
 import com.example.demo.order.domain.Order;
-import com.example.demo.order.repository.OrderRepository;
+import com.example.demo.order.infrastructure.OrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;

@@ -51,7 +51,7 @@ public class Order {
     private BigDecimal feeAmount;
 
     @Column(name = "refund_amount", nullable = false, precision = 15, scale = 2)
-    @Comment("환분 금액")
+    @Comment("환불 금액")
     private BigDecimal refundAmount;
 
     @Column(name = "net_amount", nullable = false, precision = 15, scale = 2)
