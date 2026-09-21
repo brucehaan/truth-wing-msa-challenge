@@ -61,7 +61,7 @@ public void onUpdate() {
 
 ```java
 // SettlementBatchConfig.settlementChunkReader()
-List<Order> orders = orderRepository.findUnsettledPaidOrders(fromInclusive, toExclusive);
+List<Order> orders = orderJpaRepository.findUnsettledPaidOrders(fromInclusive, toExclusive);
 ```
 
 `batch` 패키지가 `order.domain.Order`와 `order.repository.OrderRepository`를 직접 import합니다. `OrderServiceImpl.getSettlementCandidates()`라는 서비스 메서드가 있는데도 **우회해서 리포지토리에 직접 접근**합니다. 주문 스키마가 바뀌면 정산이 깨집니다.

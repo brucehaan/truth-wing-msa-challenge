@@ -3,7 +3,7 @@ package com.example.demo.batch.config;
 import com.example.demo.batch.config.dto.SettlementLine;
 import com.example.demo.batch.application.job.SettlementTasklet;
 import com.example.demo.order.domain.Order;
-import com.example.demo.order.infrastructure.OrderRepository;
+import com.example.demo.order.adapter.out.persistence.OrderJpaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -79,14 +79,14 @@ public class SettlementBatchConfig {
     @Bean
     @StepScope
     public ListItemReader<Order> settlementChunkReader(
-            OrderRepository orderRepository,
+            OrderJpaRepository orderJpaRepository,
             @Value("#{jobParameters['settlementDate']}") String settlementDateRaw
     ) {
         LocalDate settlementDate = parseSettlementDate(settlementDateRaw);
         LocalDateTime fromInclusive = settlementDate.atStartOfDay();
         LocalDateTime toExclusive = fromInclusive.plusDays(1);
 
-        List<Order> orders = orderRepository.findUnsettledPaidOrders(fromInclusive, toExclusive);
+        List<Order> orders = orderJpaRepository.findUnsettledPaidOrders(fromInclusive, toExclusive);
         log.info("Chunk reader loaded {} orders for settlementDate={}", orders.size(), settlementDate);
         return new ListItemReader<>(orders);
     }
