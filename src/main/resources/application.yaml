@@ -11,3 +11,13 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update # 존재하지 않으면 생성
+
+
+  batch:
+    job:
+      enabled: false # 기동 시 자동 실행 금지
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:org/springframework/batch/core/schema-postgresql.sql
+      continue-on-error: true # 재기동 시 "already exists" 무시

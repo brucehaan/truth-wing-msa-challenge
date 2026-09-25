@@ -1,6 +1,6 @@
-package com.example.demo.batch.application;
+package com.example.demo.settlement.adapter.in.web;
 
-import com.example.demo.batch.config.SettlementBatchConfig;
+import com.example.demo.settlement.adapter.config.SettlementIntakeJobConfig;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.JobExecution;
 import org.springframework.batch.core.job.parameters.InvalidJobParametersException;
@@ -24,8 +24,8 @@ public class SettlementJobServiceImpl implements SettlementJobService {
 
     public SettlementJobServiceImpl(
             JobOperator jobOperator,
-            @Qualifier(SettlementBatchConfig.SETTLEMENT_JOB_NAME) Job settlementTaskletJob,
-            @Qualifier(SettlementBatchConfig.SETTLEMENT_CHUNK_JOB_NAME) Job settlementChunkJob) {
+            @Qualifier(SettlementIntakeJobConfig.SETTLEMENT_JOB_NAME) Job settlementTaskletJob,
+            @Qualifier(SettlementIntakeJobConfig.SETTLEMENT_CHUNK_JOB_NAME) Job settlementChunkJob) {
         this.jobOperator = jobOperator;
         this.settlementTaskletJob = settlementTaskletJob;
         this.settlementChunkJob = settlementChunkJob;

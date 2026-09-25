@@ -1,7 +1,5 @@
-package com.example.demo.batch.config;
+package com.example.demo.settlement.adapter.config;
 
-import com.example.demo.batch.config.dto.SettlementLine;
-import com.example.demo.batch.application.job.SettlementTasklet;
 import com.example.demo.order.domain.Order;
 import com.example.demo.order.adapter.out.persistence.OrderJpaRepository;
 import org.slf4j.Logger;
@@ -26,8 +24,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Configuration
-public class SettlementBatchConfig {
-    private static final Logger log = LoggerFactory.getLogger(SettlementBatchConfig.class);
+public class SettlementIntakeJobConfig {
+    private static final Logger log = LoggerFactory.getLogger(SettlementIntakeJobConfig.class);
 
     public static final String SETTLEMENT_JOB_NAME = "settlementJob";
     public static final String SETTLEMENT_STEP_NAME = "settlementStep";
