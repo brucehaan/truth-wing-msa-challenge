@@ -22,11 +22,6 @@ public record FeePolicy(
         RoundingMode rounding
 ) {
     public FeePolicy {
-        Objects.requireNonNull(id, "id");
-        Objects.requireNonNull(rate, "rate");
-        Objects.requireNonNull(effectiveFrom, "effectiveFrom");
-        Objects.requireNonNull(rounding, "rounding");
-
         if (rate.signum() < 0 || rate.compareTo(BigDecimal.ONE) > 0) {
             throw new IllegalArgumentException("수수료율은 0이상 1이하여야 합니다.");
         }

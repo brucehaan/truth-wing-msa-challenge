@@ -21,10 +21,6 @@ public record JournalHeader(
         String issuedBy
 ) {
     public JournalHeader {
-        Objects.requireNonNull(type, "type");
-        Objects.requireNonNull(sourceKey, "sourceKey");
-        Objects.requireNonNull(businessDate, "businessDate");
-        Objects.requireNonNull(occurredAt, "occurredAt");
         if (issuedBy == null || issuedBy.isBlank()) {
             throw new IllegalArgumentException("issuedBy는 필수입니다 - 감사 추적");
         }
