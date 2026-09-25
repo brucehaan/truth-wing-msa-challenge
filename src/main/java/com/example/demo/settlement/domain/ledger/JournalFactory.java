@@ -70,33 +70,32 @@ public final class JournalFactory {
         if (amount.compareTo(ctx.remainingGross()) > 0) {
             throw new IllegalArgumentException(
                     "환불액이 잔여 판매액을 넘습니다. 환불=" + amount + ", 잔여=" + ctx.remainingGross());
-
-            Money commissionReturn = amount.equals(ctx.remainingGross())
-                    ? ctx.remainingCommission()
-                    : ctx.originalPolicy().commissionOf(amount).minus(ctx.remainingCommission());
-            Money payableReduction = amount.minus(commissionReturn);
-
-            List<Posting> postings = new ArrayList<>();
-            if (payableReduction.isPositive()) {
-                postings.add(Posting.debit(AccountCode.sellerPayable(ctx.sellerId()), payableReduction));
-            }
-            if (commissionReturn.isPositive()) {
-                postings.add(Posting.debit(AccountCode.of(AccountKind.COMMISSION_REVENUE), commissionReturn));
-            }
-            postings.add(Posting.credit(AccountCode.of(AccountKind.PG_RECEIVABLE), amount));
-
-            JournalHeader header = new JournalHeader(
-                    JournalType.REFUND,
-                    SourceKey.refund(fact.refundId()),
-                    fact.orderNo(),
-                    ctx.sellerId(),
-                    businessDate,
-                    fact.occurredAt(),
-                    ctx.originalPolicy().id(),
-                    null,
-                    SYSTEM
-            );
-            return JournalEntry.post(header, postings);
         }
+        Money commissionReturn = amount.equals(ctx.remainingGross())
+                ? ctx.remainingCommission()
+                : ctx.originalPolicy().commissionOf(amount).minus(ctx.remainingCommission());
+        Money payableReduction = amount.minus(commissionReturn);
+
+        List<Posting> postings = new ArrayList<>();
+        if (payableReduction.isPositive()) {
+            postings.add(Posting.debit(AccountCode.sellerPayable(ctx.sellerId()), payableReduction));
+        }
+        if (commissionReturn.isPositive()) {
+            postings.add(Posting.debit(AccountCode.of(AccountKind.COMMISSION_REVENUE), commissionReturn));
+        }
+        postings.add(Posting.credit(AccountCode.of(AccountKind.PG_RECEIVABLE), amount));
+
+        JournalHeader header = new JournalHeader(
+                JournalType.REFUND,
+                SourceKey.refund(fact.refundId()),
+                fact.orderNo(),
+                ctx.sellerId(),
+                businessDate,
+                fact.occurredAt(),
+                ctx.originalPolicy().id(),
+                null,
+                SYSTEM
+        );
+        return JournalEntry.post(header, postings);
     }
 }
