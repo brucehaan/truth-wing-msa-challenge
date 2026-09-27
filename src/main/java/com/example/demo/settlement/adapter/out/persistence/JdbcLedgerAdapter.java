@@ -9,15 +9,15 @@ import com.example.demo.settlement.domain.ledger.JournalType;
 import com.example.demo.settlement.domain.ledger.Posting;
 import com.example.demo.settlement.domain.ledger.SourceKey;
 import com.example.demo.settlement.domain.money.Money;
-import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -29,15 +29,17 @@ import java.util.TreeSet;
 import java.util.UUID;
 
 /**
- * 원장 영속성 (README Step 8). 원장은 JPA 가 아니라 JdbcTemplate 으로 쓴다 — append-only 라 변경 감지·merge 가 필요 없고,
- * 중복은 ON CONFLICT DO NOTHING 으로 알린다(예외로 알리면 PostgreSQL 트랜잭션이 abort 된다).
- * 이 클래스에는 UPDATE/DELETE 문이 없다. DB 차원의 보호는 docs/sql/settlement-ledger-guard.sql.
+ * 원장 어댑터. 추가(INSERT)만 한다 — UPDATE/DELETE 문이 이 클래스에 없다(I1).
+ * DB 차원의 보호(트리거·권한 회수)는 docs/sql/settlement-ledger-guard.sql 참고.
  */
 @Repository
-@RequiredArgsConstructor
 public class JdbcLedgerAdapter implements LedgerPort {
 
     private final JdbcTemplate jdbc;
+
+    public JdbcLedgerAdapter(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
 
     @Override
     public boolean appendIfAbsent(JournalEntry entry) {
@@ -50,24 +52,19 @@ public class JdbcLedgerAdapter implements LedgerPort {
                 ON CONFLICT (source_key) DO NOTHING
                 """,
                 entry.id(), h.type().name(), h.sourceKey().value(), h.orderNo(), h.sellerId(),
-                h.businessDate(), Timestamp.from(h.occurredAt()), h.feePolicyId(), h.reversalOf(), h.issuedBy());
-
+                h.businessDate(), h.occurredAt().atOffset(ZoneOffset.UTC), h.feePolicyId(), h.reversalOf(), h.issuedBy());
         if (inserted == 0) {
-            return false;                       // 이미 있음 — 트랜잭션은 멀쩡하다
+            return false;                       // 이미 있음 — 예외가 아니므로 트랜잭션은 멀쩡하다
         }
-        jdbc.batchUpdate("""
-                INSERT INTO settlement.journal_posting
-                    (id, journal_entry_id, account_kind, account_owner, amount, business_date)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                entry.postings(), 100, (ps, p) -> {
-                    ps.setObject(1, UUID.randomUUID());
-                    ps.setObject(2, entry.id());
-                    ps.setString(3, p.account().kind().name());
-                    ps.setString(4, p.account().ownerId());
-                    ps.setLong(5, p.amount().amount());
-                    ps.setObject(6, h.businessDate());
-                });
+        for (Posting p : entry.postings()) {
+            jdbc.update("""
+                    INSERT INTO settlement.journal_posting
+                        (id, journal_entry_id, account_kind, account_owner, amount, business_date)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    UUID.randomUUID(), entry.id(), p.account().kind().name(), p.account().ownerId(),
+                    p.amount().amount(), h.businessDate());
+        }
         return true;
     }
 
@@ -98,7 +95,7 @@ public class JdbcLedgerAdapter implements LedgerPort {
     }
 
     @Override
-    public Set<String> sellerWithPostingsOn(LocalDate businessDate) {
+    public Set<String> sellersWithPostingsOn(LocalDate businessDate) {
         return new TreeSet<>(jdbc.queryForList("""
                 SELECT DISTINCT account_owner FROM settlement.journal_posting
                 WHERE business_date = ? AND account_kind = 'SELLER_PAYABLE'
@@ -115,7 +112,7 @@ public class JdbcLedgerAdapter implements LedgerPort {
         return load("e.order_no = ?", orderNo);
     }
 
-    /* 헤더와 분개를 한 번에 읽어 JournalEntry.restore() 로 되돌린다. restore 가 차대 균형을 다시 검증한다. */
+    /** 헤더와 분개를 한 번에 읽어 JournalEntry.restore() 로 되돌린다. restore 가 차대 균형을 다시 검증한다. */
     private List<JournalEntry> load(String where, Object arg) {
         Map<UUID, JournalHeader> headers = new LinkedHashMap<>();
         Map<UUID, List<Posting>> postings = new HashMap<>();
@@ -148,7 +145,7 @@ public class JdbcLedgerAdapter implements LedgerPort {
                 rs.getString("order_no"),
                 rs.getString("seller_id"),
                 rs.getObject("business_date", LocalDate.class),
-                rs.getTimestamp("occurred_at").toInstant(),
+                rs.getObject("occurred_at", OffsetDateTime.class).toInstant(),
                 rs.getObject("fee_policy_id", UUID.class),
                 rs.getObject("reversal_of", UUID.class),
                 rs.getString("issued_by"));

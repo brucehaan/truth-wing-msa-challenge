@@ -9,14 +9,15 @@ import java.time.LocalDate;
 
 /**
  * 전표를 어느 정산일에 반영할지 정한다.
- * 원래 날짜가 아직 열려 있음녀 그 날짜, 이미 마감됐으면 오늘로 이월한다.
- * 마감된 날짜의 금액은 절대 바뀌지 않는다(I2) - 이 규칙 하나가 그것을 보장한다.
+ * 원래 날짜가 아직 열려 있으면 그 날짜, 이미 마감됐으면 오늘로 이월한다.
+ * 마감된 날짜의 금액은 절대 바뀌지 않는다(I2) — 이 규칙 하나가 그것을 보장한다.
  */
-public class PostingDateResolver {
+class PostingDateResolver {
+
     private final SettlementDayPort dayPort;
     private final Clock clock;
 
-    public PostingDateResolver(SettlementDayPort dayPort, Clock clock) {
+    PostingDateResolver(SettlementDayPort dayPort, Clock clock) {
         this.dayPort = dayPort;
         this.clock = clock;
     }

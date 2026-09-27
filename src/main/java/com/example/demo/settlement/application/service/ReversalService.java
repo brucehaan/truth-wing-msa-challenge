@@ -10,7 +10,9 @@ import com.example.demo.settlement.domain.ledger.SourceKey;
 import java.time.Clock;
 import java.time.LocalDate;
 
+/** 정정 유스케이스 — 잘못 적재된 전표를 반대 부호 전표로 상쇄한다. 원 전표는 남는다. */
 public class ReversalService implements ReverseJournalUseCase {
+
     private final LedgerPort ledgerPort;
     private final PostingDateResolver postingDateResolver;
     private final Clock clock;
@@ -26,7 +28,7 @@ public class ReversalService implements ReverseJournalUseCase {
         JournalEntry original = ledgerPort.findBySourceKey(originalKey)
                 .orElseThrow(() -> new IllegalArgumentException("정정 대상 전표가 없습니다: " + originalKey.value()));
         if (original.header().type() == JournalType.REVERSAL) {
-            throw new IllegalArgumentException("정정 전표를 다시 정정하지 않습니다. 원 사실을 재적재하세요.");
+            throw new IllegalArgumentException("정정 전표를 다시 정정하지 않습니다. 원 사실을 재적재하세요");
         }
         LocalDate postingDate = postingDateResolver.resolve(original.header().businessDate());
         JournalEntry reversal = original.reversal(postingDate, clock.instant(), issuedBy);

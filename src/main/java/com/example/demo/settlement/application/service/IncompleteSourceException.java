@@ -6,7 +6,8 @@ import java.time.LocalDate;
 
 public class IncompleteSourceException extends RuntimeException {
     public IncompleteSourceException(String source, LocalDate date, ControlTotal expected, ControlTotal actual) {
-        super("원천 완결성 검증 실패. source=" + source + ", date=" + date + ", 상류 선언=" + expected + ", 수신=" + actual);
+        super("원천 완결성 검증 실패. source=" + source + ", date=" + date
+                + ", 상류 선언=" + expected + ", 수신=" + actual);
     }
 
     public IncompleteSourceException(String source, LocalDate date) {

@@ -2,7 +2,6 @@ package com.example.demo.settlement.adapter.out.persistence;
 
 import com.example.demo.settlement.application.port.out.FeePolicyPort;
 import com.example.demo.settlement.domain.fee.FeePolicy;
-import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -12,9 +11,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-/** 수수료 정책 조회. 후보만 돌려주고, 무엇을 적용할지는 도메인(FeePolicySelector)이 고른다. */
+/** 수수료 정책 조회. 후보만 돌려주고, "무엇을 적용할지"는 도메인(FeePolicySelector)이 고른다. */
 @Repository
-@RequiredArgsConstructor
 public class JdbcFeePolicyAdapter implements FeePolicyPort {
 
     private static final RowMapper<FeePolicy> ROW = (rs, n) -> new FeePolicy(
@@ -27,7 +25,10 @@ public class JdbcFeePolicyAdapter implements FeePolicyPort {
 
     private final JdbcTemplate jdbc;
 
-    /* 반열림 [effective_from, effective_to) — 교체일에 두 정책이 동시에 유효해지지 않는다 */
+    public JdbcFeePolicyAdapter(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
+
     @Override
     public List<FeePolicy> candidates(String sellerId, LocalDate on) {
         return jdbc.query("""
@@ -41,10 +42,13 @@ public class JdbcFeePolicyAdapter implements FeePolicyPort {
 
     @Override
     public FeePolicy getById(UUID policyId) {
-        return jdbc.query("""
+        List<FeePolicy> found = jdbc.query("""
                 SELECT id, seller_id, rate, effective_from, effective_to, rounding
                 FROM settlement.fee_policy WHERE id = ?
-                """, ROW, policyId).stream().findFirst()
-                .orElseThrow(() -> new IllegalStateException("수수료 정책이 없습니다: " + policyId));
+                """, ROW, policyId);
+        if (found.isEmpty()) {
+            throw new IllegalStateException("수수료 정책이 없습니다: " + policyId);
+        }
+        return found.get(0);
     }
 }

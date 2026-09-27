@@ -159,6 +159,31 @@ public class Order {
         this.modifyId = actorId;
     }
 
+    /**
+     * 결제 승인 사실을 주문에 반영한다 — PaymentApproved 이벤트의 소비 결과(2주차 EDA).
+     *
+     * <p>paidAt 을 PG 승인 시각으로 확정한다. 정산은 paidAt 날짜로 "그날 결제된 주문"을 모으므로,
+     * 주문 생성 시각이 아니라 PG 가 승인한 시각이어야 PG 정산 매출일과 날짜가 어긋나지 않는다.</p>
+     *
+     * @param approvedAmount PG 가 승인한 금액(원)
+     * @param approvedAtKst  PG 승인 시각(Asia/Seoul 기준 LocalDateTime — 이 엔티티의 시각 컬럼 규칙)
+     */
+    public OrderPaymentResult confirmPayment(long approvedAmount, LocalDateTime approvedAtKst, UUID actorId) {
+        if (grossAmount == null || grossAmount.compareTo(BigDecimal.valueOf(approvedAmount)) != 0) {
+            return OrderPaymentResult.AMOUNT_MISMATCH;
+        }
+        if ("CANCELED".equals(status) || "REFUNDED".equals(status)) {
+            return OrderPaymentResult.NOT_PAYABLE;
+        }
+        if ("PAID".equals(status) && approvedAtKst.equals(paidAt)) {
+            return OrderPaymentResult.ALREADY_CONFIRMED;      // 같은 승인의 재전달 — 바꿀 것이 없다
+        }
+        this.status = "PAID";
+        this.paidAt = approvedAtKst;
+        this.modifyId = actorId;
+        return OrderPaymentResult.CONFIRMED;
+    }
+
     @PrePersist
     public void onCreate() {
         if (id == null) {

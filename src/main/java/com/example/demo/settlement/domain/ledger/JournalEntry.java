@@ -1,6 +1,5 @@
 package com.example.demo.settlement.domain.ledger;
 
-import com.example.demo.settlement.domain.ledger.exception.UnbalancedJournalException;
 import com.example.demo.settlement.domain.money.Money;
 
 import java.time.Instant;
@@ -9,11 +8,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 전표 - 원장의 Aggregate Root
- * 한 번 만들어지면 바뀌지 않는다. 모든 분개의 합은 0이다.
- * setter도, 분개를 추가하는 메서드도 없다. 정정은 reversal() (역분개)로 새 전표를 만든다.
+ * 전표 — 원장의 Aggregate Root.
+ * 한 번 만들어지면 바뀌지 않는다(I1). 모든 분개의 합은 0 이다(복식부기).
+ * setter 도, 분개를 추가하는 메서드도 없다. 정정은 reversal() 로 새 전표를 만든다.
  */
 public final class JournalEntry {
+
     private final UUID id;
     private final JournalHeader header;
     private final List<Posting> postings;
@@ -21,7 +21,7 @@ public final class JournalEntry {
     private JournalEntry(UUID id, JournalHeader header, List<Posting> postings) {
         this.id = id;
         this.header = header;
-        this.postings = List.copyOf(postings); // 방어적 복사 + 불변
+        this.postings = List.copyOf(postings);          // 방어적 복사 + 불변
     }
 
     public static JournalEntry post(JournalHeader header, List<Posting> postings) {
@@ -30,8 +30,8 @@ public final class JournalEntry {
     }
 
     /**
-     * 영속성 어댑터가 DB행을 도메인으로 되돌릴 때 쓴다.
-     * 읽을 때도 차대 균형을 다시 검증한다 - DB에서 누군가 행을 고쳤다면 여기서 드러난다.
+     * 영속성 어댑터가 DB 행을 도메인으로 되돌릴 때 쓴다.
+     * 읽을 때도 차대 균형을 다시 검증한다 — DB 에서 누군가 행을 고쳤다면 여기서 드러난다.
      */
     public static JournalEntry restore(UUID id, JournalHeader header, List<Posting> postings) {
         validate(header, postings);
@@ -40,7 +40,7 @@ public final class JournalEntry {
 
     private static void validate(JournalHeader header, List<Posting> postings) {
         if (postings == null || postings.size() < 2) {
-            throw new IllegalArgumentException("전표는 분개가 2줄 이상이어야 합니다.");
+            throw new IllegalArgumentException("전표는 분개가 2줄 이상이어야 합니다");
         }
         Money sum = postings.stream().map(Posting::amount).reduce(Money.ZERO, Money::plus);
         if (!sum.isZero()) {
@@ -48,10 +48,11 @@ public final class JournalEntry {
         }
     }
 
+    /** 원 전표를 통째로 반대 부호로 상쇄하는 정정 전표. 원 전표는 건드리지 않는다. */
     public JournalEntry reversal(LocalDate businessDate, Instant at, String issuedBy) {
         JournalHeader reversalHeader = new JournalHeader(
                 JournalType.REVERSAL,
-                SourceKey.reversalOf(id), // 같은 전표를 두 번 정정하면 멱등 키 충돌
+                SourceKey.reversalOf(id),       // 같은 전표를 두 번 정정하면 멱등 키 충돌
                 header.orderNo(),
                 header.sellerId(),
                 businessDate,
@@ -63,7 +64,7 @@ public final class JournalEntry {
         return post(reversalHeader, postings.stream().map(Posting::negate).toList());
     }
 
-    /* 이 전표에서 특정 계정에 기록된 부호 있는 합계 */
+    /** 이 전표에서 특정 계정에 기록된 부호 있는 합계. */
     public Money sumFor(AccountCode account) {
         return postings.stream()
                 .filter(p -> p.account().equals(account))
@@ -71,7 +72,7 @@ public final class JournalEntry {
                 .reduce(Money.ZERO, Money::plus);
     }
 
-    public UUID id() { return id; }
-    public JournalHeader header() { return header; }
-    public List<Posting> postings() { return postings; }
+    public UUID id()               { return id; }
+    public JournalHeader header()  { return header; }
+    public List<Posting> postings(){ return postings; }
 }

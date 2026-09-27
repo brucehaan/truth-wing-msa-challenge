@@ -5,15 +5,8 @@ import com.example.demo.settlement.domain.money.Money;
 import java.time.Instant;
 import java.util.Objects;
 
-/**
- * 환불 사실. 부분 환불은 건별로 별개의 refundId를 가진다.
- */
-public record RefundFact(
-        String refundId,
-        String orderNo,
-        Money amount,
-        Instant occurredAt
-) {
+/** 환불 사실. 부분 환불은 건별로 별개의 refundId 를 가진다. */
+public record RefundFact(String refundId, String orderNo, Money amount, Instant occurredAt) {
     public RefundFact {
         Objects.requireNonNull(refundId, "refundId");
         Objects.requireNonNull(orderNo, "orderNo");

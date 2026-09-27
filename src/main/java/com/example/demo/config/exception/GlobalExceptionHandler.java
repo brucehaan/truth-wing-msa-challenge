@@ -1,5 +1,7 @@
 package com.example.demo.config.exception;
 
+import com.example.demo.payment.domain.PaymentGatewayException;
+import com.example.demo.settlement.application.service.IncompleteSourceException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +36,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBadRequest(Exception ex, HttpServletRequest request) {
         String message = resolveBadRequestMessage(ex);
         return build(BAD_REQUEST, message, request.getRequestURI());
+    }
+
+    /** PG 가 승인하지 않았거나 응답이 요청과 맞지 않음 — 상류(PG) 문제로 본다. */
+    @ExceptionHandler(PaymentGatewayException.class)
+    public ResponseEntity<ErrorResponse> handlePaymentGateway(PaymentGatewayException ex, HttpServletRequest request) {
+        return build(BAD_GATEWAY, "[" + ex.reason() + "] " + ex.getMessage(), request.getRequestURI());
+    }
+
+    /**
+     * 정산 규칙 위반 — 통제 합계 불일치(완결성 게이트), 이미 마감됨, 시산표 불일치 등.
+     * 요청 형식은 맞지만 현재 상태와 충돌하므로 409 로 돌려준다.
+     */
+    @ExceptionHandler({IncompleteSourceException.class, IllegalStateException.class})
+    public ResponseEntity<ErrorResponse> handleConflict(RuntimeException ex, HttpServletRequest request) {
+        return build(CONFLICT, ex.getMessage(), request.getRequestURI());
     }
 
     private String resolveBadRequestMessage(Exception ex) {

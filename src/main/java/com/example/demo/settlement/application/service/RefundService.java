@@ -7,7 +7,13 @@ import com.example.demo.settlement.application.port.out.SettlementDayPort;
 import com.example.demo.settlement.domain.closing.BusinessCalendar;
 import com.example.demo.settlement.domain.fee.FeePolicy;
 import com.example.demo.settlement.domain.intake.RefundFact;
-import com.example.demo.settlement.domain.ledger.*;
+import com.example.demo.settlement.domain.ledger.AccountCode;
+import com.example.demo.settlement.domain.ledger.AccountKind;
+import com.example.demo.settlement.domain.ledger.JournalEntry;
+import com.example.demo.settlement.domain.ledger.JournalFactory;
+import com.example.demo.settlement.domain.ledger.JournalType;
+import com.example.demo.settlement.domain.ledger.RefundContext;
+import com.example.demo.settlement.domain.ledger.SourceKey;
 import com.example.demo.settlement.domain.money.Money;
 
 import java.time.Clock;
@@ -16,12 +22,12 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * 환불 유스케이스 - 원 판매 전표는 건드리지 않고 반대 방향 전표를 추가한다
- */
+/** 환불 유스케이스 — 원 판매 전표는 건드리지 않고 반대 방향 전표를 추가한다 (ADR-005). */
 public class RefundService implements RefundUseCase {
 
-    private static final Set<JournalType> SALES_LIFECYCLE = EnumSet.of(JournalType.SALE, JournalType.REFUND, JournalType.REVERSAL);
+    /** 잔여액 계산에 포함할 전표. PG 입금·지급 전표는 판매-환불 관계와 무관하다. */
+    private static final Set<JournalType> SALES_LIFECYCLE =
+            EnumSet.of(JournalType.SALE, JournalType.REFUND, JournalType.REVERSAL);
 
     private final LedgerPort ledgerPort;
     private final FeePolicyPort feePolicyPort;
@@ -38,12 +44,14 @@ public class RefundService implements RefundUseCase {
     public JournalEntry refund(RefundFact fact) {
         SourceKey key = SourceKey.refund(fact.refundId());
         var existing = ledgerPort.findBySourceKey(key);
-        if (existing.isPresent()) return existing.get();
-        List<JournalEntry> lifeCycle = ledgerPort.findByOrderNo(fact.orderNo()).stream()
+        if (existing.isPresent()) {
+            return existing.get();                                      // 같은 환불 재수신 — 멱등
+        }
+
+        List<JournalEntry> lifecycle = ledgerPort.findByOrderNo(fact.orderNo()).stream()
                 .filter(e -> SALES_LIFECYCLE.contains(e.header().type()))
                 .toList();
-
-        JournalEntry sale = lifeCycle.stream()
+        JournalEntry sale = lifecycle.stream()
                 .filter(e -> e.header().type() == JournalType.SALE)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("원 판매 전표가 없습니다. orderNo=" + fact.orderNo()));
@@ -51,17 +59,19 @@ public class RefundService implements RefundUseCase {
         AccountCode pgReceivable = AccountCode.of(AccountKind.PG_RECEIVABLE);
         AccountCode commissionRevenue = AccountCode.of(AccountKind.COMMISSION_REVENUE);
 
-        // 정상 잔액 방향으로 읽으면 판매 +, 환불 및 정정 -가 자연스럽게 합산된다
-        Money remainingGross = AccountKind.PG_RECEIVABLE.type().normalBalance(sumOf(lifeCycle, pgReceivable));
-        Money remainingCommission = AccountKind.COMMISSION_REVENUE.type().normalBalance(sumOf(lifeCycle, commissionRevenue));
+        // 정상 잔액 방향으로 읽으면 판매 +, 환불·정정 - 가 자연스럽게 합산된다
+        Money remainingGross = AccountKind.PG_RECEIVABLE.type().normalBalance(sumOf(lifecycle, pgReceivable));
+        Money remainingCommission = AccountKind.COMMISSION_REVENUE.type().normalBalance(sumOf(lifecycle, commissionRevenue));
 
         FeePolicy originalPolicy = feePolicyPort.getById(sale.header().feePolicyId());
         RefundContext ctx = new RefundContext(sale.header().sellerId(), originalPolicy, remainingGross, remainingCommission);
 
         LocalDate postingDate = postingDateResolver.resolve(BusinessCalendar.dateOf(fact.occurredAt()));
         JournalEntry refund = journalFactory.refund(fact, ctx, postingDate);
-        if (ledgerPort.appendIfAbsent(refund)) return refund;
-        return ledgerPort.findBySourceKey(key).orElseThrow(); // 동시 수신하면 먼저 들어간 쪽을 돌려준다
+        if (ledgerPort.appendIfAbsent(refund)) {
+            return refund;
+        }
+        return ledgerPort.findBySourceKey(key).orElseThrow();          // 동시 수신 — 먼저 들어간 쪽을 돌려준다
     }
 
     private static Money sumOf(List<JournalEntry> entries, AccountCode account) {
