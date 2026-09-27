@@ -27,6 +27,10 @@ public final class SettlementDay {
         this.closedAt = closedAt;
     }
 
+    public static SettlementDay open(LocalDate date) {
+        return new SettlementDay(date, DayStatus.OPEN, Map.of(), null);
+    }
+
     /* 영속성 어댑터가 복원할 때 쓰는 팩토리 */
     public static SettlementDay restore(LocalDate date, DayStatus status, Map<String, ControlTotal> verified, Instant closedAt) {
         return new SettlementDay(date, status, verified, closedAt);

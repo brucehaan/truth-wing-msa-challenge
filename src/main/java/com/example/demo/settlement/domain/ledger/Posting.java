@@ -15,6 +15,8 @@ public record Posting(
         Money amount
 ) {
     public Posting {
+        Objects.requireNonNull(account, "account");
+        Objects.requireNonNull(amount, "amount");
         if (amount.isZero()) {
             throw new IllegalArgumentException("0원 분개는 만들지 않습니다. : " + account);
         }

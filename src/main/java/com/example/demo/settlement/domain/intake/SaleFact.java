@@ -16,6 +16,10 @@ public record SaleFact(
         Instant occurredAt
 ) {
     public SaleFact {
+        Objects.requireNonNull(orderNo, "orderNo");
+        Objects.requireNonNull(sellerId, "sellerId");
+        Objects.requireNonNull(gross, "gross");
+        Objects.requireNonNull(occurredAt, "occurredAt");
         if (!gross.isPositive()) {
             throw new IllegalArgumentException("판매 금액은 양수여야 합니다.: " + gross);
         }

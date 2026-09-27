@@ -40,6 +40,7 @@ public class PaymentService implements PaymentUseCase {
     }
 
     @Override
+    @Transactional
     public PaymentResponse confirm(PaymentConfirmRequest request) {
         /*
         payment_key에 unique 제약이 있어, 같은 결제를 두 번 승인하면 제약 위반으로 500에러가 난다.
@@ -73,6 +74,7 @@ public class PaymentService implements PaymentUseCase {
     }
 
     @Override
+    @Transactional
     public PaymentFailureResponse recordFailure(PaymentFailRequest request) {
         PaymentFailure failure = PaymentFailure.create(
                 request.orderId(),

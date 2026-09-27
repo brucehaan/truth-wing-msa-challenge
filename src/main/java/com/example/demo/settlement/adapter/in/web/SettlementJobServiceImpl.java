@@ -1,15 +1,13 @@
 package com.example.demo.settlement.adapter.in.web;
 
-import com.example.demo.settlement.adapter.config.SettlementIntakeJobConfig;
+import com.example.demo.settlement.adapter.in.batch.BatchJobParameters;
+import com.example.demo.settlement.adapter.in.batch.SettlementCloseJobConfig;
+import com.example.demo.settlement.adapter.in.batch.SettlementIntakeJobConfig;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.JobExecution;
-import org.springframework.batch.core.job.parameters.InvalidJobParametersException;
 import org.springframework.batch.core.job.parameters.JobParameters;
 import org.springframework.batch.core.job.parameters.JobParametersBuilder;
-import org.springframework.batch.core.launch.JobExecutionAlreadyRunningException;
-import org.springframework.batch.core.launch.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.launch.JobOperator;
-import org.springframework.batch.core.launch.JobRestartException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -19,34 +17,33 @@ import java.time.LocalDate;
 public class SettlementJobServiceImpl implements SettlementJobService {
 
     private final JobOperator jobOperator;
-    private final Job settlementTaskletJob;
-    private final Job settlementChunkJob;
+    private final Job intakeJob;
+    private final Job closeJob;
 
     public SettlementJobServiceImpl(
             JobOperator jobOperator,
-            @Qualifier(SettlementIntakeJobConfig.SETTLEMENT_JOB_NAME) Job settlementTaskletJob,
-            @Qualifier(SettlementIntakeJobConfig.SETTLEMENT_CHUNK_JOB_NAME) Job settlementChunkJob) {
+            @Qualifier(SettlementIntakeJobConfig.JOB_NAME) Job intakeJob,
+            @Qualifier(SettlementCloseJobConfig.JOB_NAME) Job closeJob) {
         this.jobOperator = jobOperator;
-        this.settlementTaskletJob = settlementTaskletJob;
-        this.settlementChunkJob = settlementChunkJob;
+        this.intakeJob = intakeJob;
+        this.closeJob = closeJob;
     }
 
     @Override
-    public JobExecution launchTasklet(LocalDate settlementDate) throws JobInstanceAlreadyCompleteException, InvalidJobParametersException, JobExecutionAlreadyRunningException, JobRestartException {
-        return jobOperator.start(settlementTaskletJob, buildJobParameters(settlementDate, "tasklet"));
+    public JobExecution launchIntake(LocalDate targetDate, long attempt) throws Exception {
+        return jobOperator.start(intakeJob, buildJobParameters(targetDate, attempt));
     }
 
     @Override
-    public JobExecution launchChunk(LocalDate settlementDate) throws JobInstanceAlreadyCompleteException, InvalidJobParametersException, JobExecutionAlreadyRunningException, JobRestartException {
-        return jobOperator.start(settlementChunkJob, buildJobParameters(settlementDate, "chunk"));
+    public JobExecution launchClose(LocalDate targetDate, long attempt) throws Exception {
+        return jobOperator.start(closeJob, buildJobParameters(targetDate, attempt));
     }
 
-    private JobParameters buildJobParameters(LocalDate settlementDate, String mode) {
+    /* 식별 파라미터 = targetDate + attempt (BatchJobParameters 참고). 예전의 requestedAt(현재 시각)은 쓰지 않는다. */
+    private JobParameters buildJobParameters(LocalDate targetDate, long attempt) {
         return new JobParametersBuilder()
-                .addString("settlementDate", settlementDate.toString())
-                .addString("mode", mode)
-                // 동일 날짜 재실행을 위한 유니크 파라미터
-                .addLong("requestedAt", System.currentTimeMillis())
+                .addString(BatchJobParameters.TARGET_DATE, targetDate.toString())
+                .addLong(BatchJobParameters.ATTEMPT, attempt)
                 .toJobParameters();
     }
 }

@@ -21,6 +21,7 @@ public class ProductService implements ProductUseCase {
     private final ProductJpaRepository productJpaRepository;
 
     @Override
+    @Transactional
     public Product create(ProductCreateRequest request) {
         Product product = Product.create(
                 toUuid(request.sellerId(), "sellerId"),
@@ -45,6 +46,7 @@ public class ProductService implements ProductUseCase {
     }
 
     @Override
+    @Transactional
     public Product update(UUID productId, ProductUpdateRequest request) {
         Product product = findByIdOrThrow(productId);
         product.update(
@@ -59,6 +61,7 @@ public class ProductService implements ProductUseCase {
     }
 
     @Override
+    @Transactional
     public void delete(UUID productId) {
         Product product = findByIdOrThrow(productId);
         productJpaRepository.delete(product);

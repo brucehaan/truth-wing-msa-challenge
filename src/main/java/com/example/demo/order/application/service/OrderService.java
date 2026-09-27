@@ -1,5 +1,11 @@
 package com.example.demo.order.application.service;
 
+import com.example.demo.order.application.port.in.OrderControlTotal;
+
+import com.example.demo.order.application.port.in.OrderSettlementFact;
+
+import java.math.BigDecimal;
+
 import com.example.demo.order.application.port.in.OrderUseCase;
 import com.example.demo.order.domain.Order;
 import com.example.demo.order.adapter.out.persistence.OrderJpaRepository;
@@ -57,6 +63,29 @@ public class OrderService implements OrderUseCase {
         return orderJpaRepository.findUnsettledPaidOrders(fromInclusive, toExclusive).stream()
                 .map(OrderResponse::from)
                 .toList();
+    }
+
+    @Override
+    public List<OrderSettlementFact> exportPaidFacts(LocalDate paidDate) {
+        LocalDateTime fromInclusive = paidDate.atStartOfDay();
+        LocalDateTime toExclusive = fromInclusive.plusDays(1);
+        return orderJpaRepository
+                .findByPaidAtGreaterThanEqualAndPaidAtLessThanAndGrossAmountGreaterThanOrderByOrderNoAsc(
+                        fromInclusive, toExclusive, BigDecimal.ZERO)
+                .stream()
+                .map(order -> new OrderSettlementFact(order.getOrderNo(), order.getSellerId(),
+                        order.getGrossAmount(), order.getPaidAt()))
+                .toList();
+    }
+
+    @Override
+    public OrderControlTotal paidControlTotal(LocalDate paidDate) {
+        LocalDateTime fromInclusive = paidDate.atStartOfDay();
+        LocalDateTime toExclusive = fromInclusive.plusDays(1);
+        long count = orderJpaRepository.countByPaidAtGreaterThanEqualAndPaidAtLessThanAndGrossAmountGreaterThan(
+                fromInclusive, toExclusive, BigDecimal.ZERO);
+        BigDecimal sum = orderJpaRepository.sumGrossAmountPaidBetween(fromInclusive, toExclusive);
+        return new OrderControlTotal(count, sum == null ? BigDecimal.ZERO : sum);
     }
 
     private UUID resolveActorId(OrderCreateRequest request) {

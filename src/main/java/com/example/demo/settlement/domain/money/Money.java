@@ -30,6 +30,11 @@ public record Money(
         return new Money(Math.negateExact(amount));
     }
 
+    /* 둘 중 작은 금액. 부분 환불 수수료가 '남은 수수료'를 넘지 않게 자를 때 쓴다 (JournalFactory.refund) */
+    public Money min(Money other) {
+        return compareTo(other) <= 0 ? this : other;
+    }
+
     /* 비율 적용 - 소수 연산이 일어나는 유일한 지점. 반올림 규칙은 호출자(정책)가 정한다. */
     public Money multiply(BigDecimal rate, RoundingMode rounding) {
         BigDecimal result = BigDecimal.valueOf(amount).multiply(rate).setScale(0, rounding);

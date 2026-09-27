@@ -12,6 +12,7 @@ public record AccountCode(
         String ownerId
 ) {
         public AccountCode {
+            Objects.requireNonNull(kind, "kind");
             if (kind.isPerSeller() && (ownerId == null || ownerId.isBlank())) {
                 throw new IllegalArgumentException(kind + " 계정은 ownerId가 필요합니다.");
             }

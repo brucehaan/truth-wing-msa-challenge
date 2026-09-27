@@ -73,7 +73,7 @@ public final class JournalFactory {
         }
         Money commissionReturn = amount.equals(ctx.remainingGross())
                 ? ctx.remainingCommission()
-                : ctx.originalPolicy().commissionOf(amount).minus(ctx.remainingCommission());
+                : ctx.originalPolicy().commissionOf(amount).min(ctx.remainingCommission());
         Money payableReduction = amount.minus(commissionReturn);
 
         List<Posting> postings = new ArrayList<>();

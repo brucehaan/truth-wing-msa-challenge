@@ -1,5 +1,7 @@
 package com.example.demo.settlement.domain.ledger;
 
+import java.util.Objects;
+
 import com.example.demo.settlement.domain.fee.FeePolicy;
 import com.example.demo.settlement.domain.money.Money;
 
@@ -13,4 +15,10 @@ public record RefundContext(
         Money remainingGross,
         Money remainingCommission
 ) {
+    public RefundContext {
+        Objects.requireNonNull(sellerId, "sellerId");
+        Objects.requireNonNull(originalPolicy, "originalPolicy");
+        Objects.requireNonNull(remainingGross, "remainingGross");
+        Objects.requireNonNull(remainingCommission, "remainingCommission");
+    }
 }

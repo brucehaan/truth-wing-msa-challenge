@@ -1,5 +1,6 @@
 package com.example.demo.settlement.adapter.in.web;
 
+import com.example.demo.settlement.domain.closing.BusinessCalendar;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,47 +16,59 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.Map;
 
-import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.ACCEPTED;
 
 @RestController
 @RequestMapping("/api/batch/jobs")
 @RequiredArgsConstructor
-@Tag(name = "Batch", description = "배치 실행 API")
+@Tag(name = "Batch", description = "정산 배치 실행 API")
 public class BatchJobController {
     private final SettlementJobService settlementJobService;
 
-    @PostMapping("/settlement")
-    @Operation(summary = "정산 배치 실행", description = "settlementDate 기준으로 settlementJob을 실행한다")
-    public ResponseEntity<Map<String, Object>> runSettlementJob(
-            @Parameter(description = "정산일(yyyy-MM-dd), 미입력 시 오늘")
+    @PostMapping("/settlement-intake")
+    @Operation(summary = "정산 수집 배치 실행", description = "targetDate 의 주문 사실을 스테이징 → 통제 합계 대조 → 원장 적재한다")
+    public ResponseEntity<Map<String, Object>> runIntakeJob(
+            @Parameter(description = "대상 거래일(yyyy-MM-dd), 미입력 시 어제(Asia/Seoul) — 정산 주기 D+1")
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate settlementDate
+            LocalDate targetDate,
+            @Parameter(description = "실행 차수. 같은 날짜를 의도적으로 다시 수집할 때만 올린다")
+            @RequestParam(defaultValue = "1")
+            long attempt
     ) throws Exception {
-        LocalDate targetDate = settlementDate == null ? LocalDate.now() : settlementDate;
-        JobExecution execution = settlementJobService.launchTasklet(targetDate);
-        return ResponseEntity.status(ACCEPTED).body(toResponse(execution, targetDate));
+        LocalDate date = resolve(targetDate);
+        JobExecution execution = settlementJobService.launchIntake(date, attempt);
+        return ResponseEntity.status(ACCEPTED).body(toResponse(execution, date, attempt));
     }
 
-    @PostMapping("/settlement-chunk")
-    @Operation(summary = "정산 청크 배치 실행", description = "settlementDate 기준으로 settlementChunkJob을 실행한다")
-    public ResponseEntity<Map<String, Object>> runSettlementChunkJob(
-            @Parameter(description = "정산일(yyyy-MM-dd), 미입력 시 오늘")
+    @PostMapping("/settlement-close")
+    @Operation(summary = "정산 마감 배치 실행", description = "targetDate 를 마감하고 판매자 정산서를 발행한다. 수집이 끝난 뒤에 돌린다")
+    public ResponseEntity<Map<String, Object>> runCloseJob(
+            @Parameter(description = "정산일(yyyy-MM-dd), 미입력 시 어제(Asia/Seoul)")
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate settlementDate
+            LocalDate targetDate,
+            @Parameter(description = "실행 차수")
+            @RequestParam(defaultValue = "1")
+            long attempt
     ) throws Exception {
-        LocalDate targetDate = settlementDate == null ? LocalDate.now() : settlementDate;
-        JobExecution execution = settlementJobService.launchChunk(targetDate);
-        return ResponseEntity.status(ACCEPTED).body(toResponse(execution, targetDate));
+        LocalDate date = resolve(targetDate);
+        JobExecution execution = settlementJobService.launchClose(date, attempt);
+        return ResponseEntity.status(ACCEPTED).body(toResponse(execution, date, attempt));
     }
 
-    private Map<String, Object> toResponse(JobExecution execution, LocalDate targetDate) {
+    /* 서버 타임존이 아니라 영업 타임존 기준 어제 — D+1 에 D 를 정산한다 */
+    private LocalDate resolve(LocalDate targetDate) {
+        return targetDate != null ? targetDate : LocalDate.now(BusinessCalendar.ZONE).minusDays(1);
+    }
+
+    private Map<String, Object> toResponse(JobExecution execution, LocalDate targetDate, long attempt) {
         return Map.of(
                 "jobName", execution.getJobInstance().getJobName(),
                 "jobExecutionId", execution.getId(),
                 "status", execution.getStatus().toString(),
-                "settlementDate", targetDate.toString()
+                "targetDate", targetDate.toString(),
+                "attempt", attempt
         );
     }
 }

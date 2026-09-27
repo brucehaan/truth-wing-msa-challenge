@@ -1,5 +1,7 @@
 package com.example.demo.settlement.domain.closing;
 
+import java.util.Objects;
+
 import com.example.demo.settlement.domain.money.Money;
 
 import java.time.Instant;
@@ -16,4 +18,10 @@ public record SellerStatement(
         Money payable,
         Instant closedAt
 ) {
+    public SellerStatement {
+        Objects.requireNonNull(sellerId, "sellerId");
+        Objects.requireNonNull(businessDate, "businessDate");
+        Objects.requireNonNull(payable, "payable");
+        Objects.requireNonNull(closedAt, "closedAt");
+    }
 }

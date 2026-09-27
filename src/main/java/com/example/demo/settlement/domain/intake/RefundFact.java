@@ -15,6 +15,10 @@ public record RefundFact(
         Instant occurredAt
 ) {
     public RefundFact {
+        Objects.requireNonNull(refundId, "refundId");
+        Objects.requireNonNull(orderNo, "orderNo");
+        Objects.requireNonNull(amount, "amount");
+        Objects.requireNonNull(occurredAt, "occurredAt");
         if (!amount.isPositive()) {
             throw new IllegalArgumentException("환불 금액은 양수여야 합니다: " + amount);
         }
