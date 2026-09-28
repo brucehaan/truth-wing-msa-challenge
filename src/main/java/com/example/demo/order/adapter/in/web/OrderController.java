@@ -1,7 +1,7 @@
 package com.example.demo.order.adapter.in.web;
 
-import com.example.demo.order.adapter.in.web.dto.OrderCreateRequest;
-import com.example.demo.order.adapter.in.web.dto.OrderResponse;
+import com.example.demo.order.application.port.in.dto.OrderCreateRequest;
+import com.example.demo.order.application.port.in.dto.OrderResponse;
 import com.example.demo.order.application.port.in.OrderUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

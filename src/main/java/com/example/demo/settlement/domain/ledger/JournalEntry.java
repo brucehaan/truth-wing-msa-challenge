@@ -1,5 +1,7 @@
 package com.example.demo.settlement.domain.ledger;
 
+import com.example.demo.settlement.domain.ledger.exception.UnbalancedJournalException;
+
 import com.example.demo.settlement.domain.money.Money;
 
 import java.time.Instant;

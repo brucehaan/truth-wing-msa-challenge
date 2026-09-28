@@ -1,7 +1,7 @@
 package com.example.demo.settlement.adapter.in.batch;
 
-import com.example.demo.settlement.adapter.out.upstream.OrderStagingLoader;
 import com.example.demo.settlement.application.port.in.IngestSalesUseCase;
+import com.example.demo.settlement.application.port.in.StageSalesUseCase;
 import com.example.demo.settlement.application.port.out.StagedFactPort;
 import com.example.demo.settlement.domain.intake.SaleFact;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class SettlementIntakeJobConfig {
 
     private final IngestSalesUseCase ingest;
     private final StagedFactPort stagedFacts;
-    private final OrderStagingLoader loader;
+    private final StageSalesUseCase stageSales;
 
     @Bean
     public Job settlementIntakeJob(JobRepository jobRepository,
@@ -57,14 +57,13 @@ public class SettlementIntakeJobConfig {
                 .build();
     }
 
-    /* Step 1. 주문 모듈의 공개 API 로 D일 사실과 통제 합계를 스테이징에 싣는다. 재실행해도 결과가 같다. */
+    /* Step 1. 주문의 공개 포트를 ACL 로 번역해 D일 사실과 통제 합계를 스테이징에 싣는다. 재실행해도 결과가 같다. */
     @Bean
     public Step intakeLoadStep(JobRepository jobRepository, PlatformTransactionManager tm) {
         return new StepBuilder("intakeLoadStep", jobRepository)
                 .tasklet((contribution, context) -> {
-                    LocalDate targetDate = BatchJobParameters.targetDate(context);
-                    loader.load(targetDate);
-                    log.info("정산 수집 적재 완료: targetDate={}", targetDate);
+                    StageSalesUseCase.StageResult staged = stageSales.stage(BatchJobParameters.targetDate(context));
+                    log.info("정산 수집 적재 완료: {}", staged);
                     return RepeatStatus.FINISHED;
                 }, tm)
                 .build();

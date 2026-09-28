@@ -1,9 +1,9 @@
 package com.example.demo.payment.adapter.in.web;
 
-import com.example.demo.payment.adapter.in.web.dto.PaymentConfirmRequest;
-import com.example.demo.payment.adapter.in.web.dto.PaymentFailRequest;
-import com.example.demo.payment.adapter.in.web.dto.PaymentFailureResponse;
-import com.example.demo.payment.adapter.in.web.dto.PaymentResponse;
+import com.example.demo.payment.application.port.in.dto.PaymentConfirmRequest;
+import com.example.demo.payment.application.port.in.dto.PaymentFailRequest;
+import com.example.demo.payment.application.port.in.dto.PaymentFailureResponse;
+import com.example.demo.payment.application.port.in.dto.PaymentResponse;
 import com.example.demo.payment.application.port.in.PaymentUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

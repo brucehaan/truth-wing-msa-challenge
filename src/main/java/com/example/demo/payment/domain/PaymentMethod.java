@@ -2,7 +2,7 @@ package com.example.demo.payment.domain;
 
 /**
  * 결제 도메인의 결제수단. PG 사가 쓰는 표기(토스는 "카드", "간편결제" 같은 한글 문자열)와 분리된 우리 언어다.
- * PG 표기 → 이 enum 번역은 ACL(infrastructure.toss.TossPaymentTranslator)이 맡는다.
+ * PG 표기 → 이 enum 번역은 ACL(adapter.out.pg.toss.TossPaymentTranslator)이 맡는다.
  */
 public enum PaymentMethod {
     CARD,

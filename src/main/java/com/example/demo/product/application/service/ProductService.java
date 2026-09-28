@@ -2,9 +2,9 @@ package com.example.demo.product.application.service;
 
 import com.example.demo.product.domain.Product;
 import com.example.demo.product.application.port.in.ProductUseCase;
-import com.example.demo.product.adapter.in.web.dto.ProductCreateRequest;
-import com.example.demo.product.adapter.in.web.dto.ProductUpdateRequest;
-import com.example.demo.product.adapter.out.persistence.ProductJpaRepository;
+import com.example.demo.product.application.port.in.dto.ProductCreateRequest;
+import com.example.demo.product.application.port.in.dto.ProductUpdateRequest;
+import com.example.demo.product.application.port.out.ProductPersistencePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ProductService implements ProductUseCase {
-    private final ProductJpaRepository productJpaRepository;
+    private final ProductPersistencePort productPersistencePort;
 
     @Override
     @Transactional
@@ -32,7 +32,7 @@ public class ProductService implements ProductUseCase {
                 request.status(),
                 toUuid(request.creatorId(), "creatorId")
         );
-        return productJpaRepository.save(product);
+        return productPersistencePort.save(product);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class ProductService implements ProductUseCase {
 
     @Override
     public List<Product> getAll() {
-        return productJpaRepository.findAll();
+        return productPersistencePort.findAll();
     }
 
     @Override
@@ -64,11 +64,11 @@ public class ProductService implements ProductUseCase {
     @Transactional
     public void delete(UUID productId) {
         Product product = findByIdOrThrow(productId);
-        productJpaRepository.delete(product);
+        productPersistencePort.delete(product);
     }
 
     private Product findByIdOrThrow(UUID productId) {
-        return productJpaRepository.findById(productId)
+        return productPersistencePort.findById(productId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product Not Found"));
     }
 

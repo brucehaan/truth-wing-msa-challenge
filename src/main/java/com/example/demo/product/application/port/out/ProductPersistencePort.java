@@ -1,17 +1,10 @@
 package com.example.demo.product.application.port.out;
 
 import com.example.demo.product.domain.Product;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
-public interface ProductPersistencePort {
-    Product save(Product product);
-
-    Optional<Product> findById(UUID productId);
-
-    List<Product> findAll();
-
-    void delete(Product product);
+/** 상품 저장 포트 — Spring Data 리포지토리 인터페이스를 출력 포트로 쓴다(구현체는 Spring Data 가 만든다). */
+public interface ProductPersistencePort extends JpaRepository<Product, UUID> {
 }
