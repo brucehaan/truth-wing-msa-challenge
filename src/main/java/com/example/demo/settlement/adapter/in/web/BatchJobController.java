@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.job.JobExecution;
+import com.example.demo.settlement.application.port.in.SettlementJobUseCase;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +23,7 @@ import static org.springframework.http.HttpStatus.ACCEPTED;
 @RequiredArgsConstructor
 @Tag(name = "Batch", description = "정산 배치 실행 API")
 public class BatchJobController {
-    private final SettlementJobService settlementJobService;
+    private final SettlementJobUseCase settlementJobUseCase;
 
     @PostMapping("/settlement-intake")
     @Operation(summary = "정산 수집 배치 실행", description = "targetDate 의 주문 사실을 스테이징 → 통제 합계 대조 → 원장 적재한다")
@@ -37,8 +37,7 @@ public class BatchJobController {
             long attempt
     ) throws Exception {
         LocalDate date = resolve(targetDate);
-        JobExecution execution = settlementJobService.launchIntake(date, attempt);
-        return ResponseEntity.status(ACCEPTED).body(toResponse(execution, date, attempt));
+        return ResponseEntity.status(ACCEPTED).body(toResponse(settlementJobUseCase.launchIntake(date, attempt), date, attempt));
     }
 
     @PostMapping("/settlement-close")
@@ -53,8 +52,7 @@ public class BatchJobController {
             long attempt
     ) throws Exception {
         LocalDate date = resolve(targetDate);
-        JobExecution execution = settlementJobService.launchClose(date, attempt);
-        return ResponseEntity.status(ACCEPTED).body(toResponse(execution, date, attempt));
+        return ResponseEntity.status(ACCEPTED).body(toResponse(settlementJobUseCase.launchClose(date, attempt), date, attempt));
     }
 
     /* 서버 타임존이 아니라 영업 타임존 기준 어제 — D+1 에 D 를 정산한다 */
@@ -62,11 +60,11 @@ public class BatchJobController {
         return targetDate != null ? targetDate : LocalDate.now(BusinessCalendar.ZONE).minusDays(1);
     }
 
-    private Map<String, Object> toResponse(JobExecution execution, LocalDate targetDate, long attempt) {
+    private Map<String, Object> toResponse(SettlementJobUseCase.JobResult result, LocalDate targetDate, long attempt) {
         return Map.of(
-                "jobName", execution.getJobInstance().getJobName(),
-                "jobExecutionId", execution.getId(),
-                "status", execution.getStatus().toString(),
+                "jobName", result.jobName(),
+                "jobExecutionId", result.executionId(),
+                "status", result.status(),
                 "targetDate", targetDate.toString(),
                 "attempt", attempt
         );

@@ -6,7 +6,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:postgres}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    password: ${DB_PASSWORD:1234}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -21,3 +21,19 @@ spring:
       mode: always
       schema-locations: classpath:org/springframework/batch/core/schema-postgresql.sql
       continue-on-error: true # 재기동 시 "already exists" 무시
+  flyway:
+    # 정산 원장·조회 모델·아웃박스 테이블은 Flyway 가 만든다 (src/main/resources/db/migration V1~V4)
+    schemas: settlement          # 이력 테이블도 settlement.flyway_schema_history 에 둔다
+    baseline-on-migrate: true    # 예전 방식으로 settlement 스키마가 이미 만들어진 DB 도 받아들인다
+    baseline-version: 0          # 기준선을 0 으로 두어 V1 부터 모두 적용한다 (IF NOT EXISTS 라 다시 실행해도 안전)
+
+# EDA — 트랜잭셔널 아웃박스 릴레이
+outbox:
+  relay:
+    fixed-delay-ms: 1000   # 폴링 주기
+    batch-size: 100        # 한 주기에 발행할 최대 건수
+    max-attempts: 10       # 이 횟수만큼 실패한 이벤트는 dead 로 남긴다 (GET /internal/outbox/stats)
+
+payment:
+  toss:
+    secret-key: ${TOSS_SECRET_KEY:}   # 토스 키 없이 흐름만 보려면 fake-pg 프로파일

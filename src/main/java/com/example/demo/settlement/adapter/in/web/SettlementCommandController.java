@@ -1,8 +1,8 @@
 package com.example.demo.settlement.adapter.in.web;
 
-import com.example.demo.settlement.adapter.in.SettlementCommandFacade;
 import com.example.demo.settlement.adapter.in.web.dto.JournalResponse;
 import com.example.demo.settlement.adapter.in.web.dto.RefundRequest;
+import com.example.demo.settlement.application.port.in.SettlementCommandUseCase;
 import com.example.demo.settlement.domain.intake.RefundFact;
 import com.example.demo.settlement.domain.ledger.SourceKey;
 import com.example.demo.settlement.domain.money.Money;
@@ -29,10 +29,10 @@ import static org.springframework.http.HttpStatus.CREATED;
 @Tag(name = "Settlement Command", description = "정산 명령 API (CQRS 쓰기 측)")
 public class SettlementCommandController {
 
-    private final SettlementCommandFacade commands;
+    private final SettlementCommandUseCase commands;
     private final Clock clock;
 
-    public SettlementCommandController(SettlementCommandFacade commands, Clock clock) {
+    public SettlementCommandController(SettlementCommandUseCase commands, Clock clock) {
         this.commands = commands;
         this.clock = clock;
     }
